@@ -6,13 +6,13 @@ We have developed a juptyer notebook that plots isoform data. The figure provide
 
 ## Contributers
 
-Kartik Chundru
-Emma Dempster
-Rhiannon Haigh
-Eilis Hannon
-Szi Kay Leung
-Kamile Tamusauskaite
-Jacob Thomas-Hegarty
-Emma Walker
+* Kartik Chundru
+* Emma Dempster
+* Rhiannon Haigh
+* Eilis Hannon
+* Szi Kay Leung
+* Kamile Tamusauskaite
+* Jacob Thomas-Hegarty
+* Emma Walker
 
 
