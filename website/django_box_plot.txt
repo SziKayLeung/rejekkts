@@ -1,0 +1,74 @@
+cd boxplot_web_app
+python manage.py startapp boxplot
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from django.shortcuts import render
+
+
+def generate_box_plot(request):
+    if request.method == 'POST':
+        value1 = request.POST.get('value1')
+        value2 = request.POST.get('value2')
+        # Example data (replace with your own data retrieval logic)
+        data = {
+            'Group 1': [1, 2, 3, 4, 5],
+            'Group 2': [2, 4, 6, 8, 10]
+        }
+        df = pd.DataFrame(data)
+
+        # Filter data based on user inputs
+        filtered_data = df[[value1, value2]]
+
+        # Generate the box plot
+        plt.figure(figsize=(8, 6))
+        filtered_data.boxplot()
+        plt.title('Box Plot')
+        plt.xlabel('Groups')
+        plt.ylabel('Values')
+        plt.savefig('boxplot.png')
+        plt.close()
+
+        return render(request, 'boxplot.html')
+    else:
+        return render(request, 'boxplot.html')
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Box Plot Web App</title>
+</head>
+<body>
+    <h1>Box Plot Web App</h1>
+    <form method="POST" action="{% url 'generate_box_plot' %}">
+        {% csrf_token %}
+        <label for="value1">Value 1:</label>
+        <input type="text" name="value1"><br><br>
+        <label for="value2">Value 2:</label>
+        <input type="text" name="value2"><br><br>
+        <input type="submit" value="Generate Box Plot">
+    </form>
+    <br>
+    {% if plot_generated %}
+    <h2>Box Plot</h2>
+    <img src="{% static 'boxplot.png' %}" alt="Box Plot">
+    {% endif %}
+</body>
+</html>
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.generate_box_plot, name='generate_box_plot'),
+]
+
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('boxplot.urls')),
+]
+
+python manage.py runserver
