@@ -1,0 +1,65 @@
+import sqlite3
+import pandas as pd
+import matplotlib.pyplot as plt
+import dtale
+
+from django.shortcuts import render
+from django.db import connection
+
+# Connect to fetal SQL database
+conn = sqlite3.connect("fetal.db")
+
+# Get list of tables
+cursor = conn.cursor()
+cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+tables = cursor.fetchall()
+print(tables)
+
+# Probe search function
+def probe_search(probe_name):
+    probe = probe_name
+    # Create SQL statement using selected probe name
+    sql_statement = f"SELECT b.{probe}, p.pcw FROM betas b JOIN pheno p ON b.sample_barcode = p.sample_barcode ORDER BY PCW"
+    # Execute SQL query
+    with connection.cursor() as cursor:
+        cursor.execute(sql_statement)
+        probe_data = cursor.fetchall()
+    probe_data = pd.DataFrame(probe_data, columns=['probe', 'pcw'])
+    return probe_data
+
+# Gene search function
+def gene_search(gene_name):
+    gene = "'YTHDF1'"
+    gene_n = f"'{gene_name}'"
+    # Create SQL statement to return corresponding probes from gene
+    sql_statement = f"SELECT Gene, IlmnID FROM manifest WHERE Gene = {gene_n}"
+    # Execute SQL query
+    with connection.cursor() as cursor:
+        cursor.execute(sql_statement)
+        gene_data = cursor.fetchall()
+    gene_data = pd.DataFrame(gene_data, columns=['Gene', 'IlmnID'])
+    return gene_data
+
+# Create a Django view
+def fetal_methylation_app(request):
+    if request.method == 'POST':
+        probe = request.POST.get('probe')
+        gene = request.POST.get('gene')
+        if probe:
+            df = probe_search(probe)
+            # Plot the data using matplotlib or any other plotting library
+            plt.plot(df['pcw'], df['probe'])
+            plt.ylim(0, 1)
+            plt.xlabel('PCW')
+            plt.ylabel(probe)
+            plt.title('Methylation Plot')
+            plt.savefig('plot.png')
+            plt.close()
+        if gene:
+            df = gene_search(gene)
+            dtale.show(df)
+            # Display the gene search results using DTale or any other data table library
+            
+        return render(request, 'fetal_methylation_app.html')
+    else:
+        return render(request, 'fetal_methylation_app.html')

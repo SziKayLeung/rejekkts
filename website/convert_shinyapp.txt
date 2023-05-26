@@ -1,0 +1,79 @@
+import sqlite3
+import pandas as pd
+import matplotlib.pyplot as plt
+import dtale
+
+# Connect to fetal SQL database
+conn = sqlite3.connect("fetal.db")
+cursor = conn.cursor()
+
+# Get list of tables
+cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+tables = cursor.fetchall()
+print(tables)
+
+# Probe search function
+def probe_search(probe_name):
+    probe = probe_name
+    # Create SQL statement using selected probe name
+    sql_statement = f"SELECT b.{probe}, p.pcw FROM betas b JOIN pheno p ON b.sample_barcode = p.sample_barcode ORDER BY PCW"
+    # Execute SQL query
+    probe_data = pd.read_sql_query(sql_statement, conn)
+    return probe_data
+
+# Gene search function
+def gene_search(gene_name):
+    gene = "'YTHDF1'"
+    gene_n = f"'{gene_name}'"
+    # Create SQL statement to return corresponding probes from gene
+    sql_statement = f"SELECT Gene, IlmnID FROM manifest WHERE Gene = {gene_n}"
+    table = pd.read_sql_query(sql_statement, conn)
+    return table
+
+# Construct UI
+ui = """
+library(shiny)
+library(shinythemes)
+library(ggplot2)
+library(DT)
+
+fluidPage(
+  titlePanel('Fetal methylation data plotting app'),
+  theme = shinythemes::shinytheme("cerulean"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput("probe", 'Enter probe ID:'),
+      textInput("gene", 'Enter gene name:')
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel('Methylation Plot', plotOutput("plot")),
+        tabPanel('Gene Search Table', DTOutput("table"))
+      )
+    )
+  )
+)
+"""
+
+# Set up server
+server = """
+function(input, output, session) {
+  output$plot <- renderPlot({
+    validate(
+      need(input$probe != '', 'Please select a probe ID.')
+    )
+    df <- probe_search(input$probe)
+    ggplot(data = df, aes_string(x = 'PCW', y = input$probe)) +
+      geom_point() +
+      ylim(0, 1)
+  })
+  
+  output$table <- renderDT({
+    df <- gene_search(input$gene)
+    datatable(df)
+  })
+}
+"""
+
+# Execute app connection
+shinyApp(ui = ui, server = server)
